@@ -1,4 +1,3 @@
-import os
 import sys
 from socket import socket, AF_INET, SOCK_STREAM
 
@@ -35,32 +34,13 @@ control_socket.send(bytes(f'PASS {password}\r\n', 'utf-8'))
 response = control_socket.recv(1024).decode('utf-8').strip()
 print(response)
 
-def extractingPASVData(response):
-    indexOne = response.index('(')
-    indexTwo = response.index(')')
-    return response[indexOne + 1:indexTwo].split(',')
-
-def extractingIP(data):
-    return data[0] + '.' + data[1] + '.' + data[2] + '.' + data[3]
-
-def extractingPort(data):
-    dataOne = int(data[4])
-    dataTwo = int(data[5])
-
-    return (dataOne * 256) + dataTwo
-    
-
 # login successful
 if response.startswith('230'):
     # main loop
     loop = True
     while loop:
         print('Please enter a command, only "quit" supported so far.')
-        userInput = input('ftp> ')
-        listOfArgs = userInput.split()
-        command = listOfArgs[0]
-        
-
+        command = input('ftp> ')
 
         if command == 'quit':
             # end session
