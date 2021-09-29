@@ -95,16 +95,18 @@ if response.startswith('230'):
                         response = control_socket.recv(1024).decode('utf-8').strip()
                         print(response)
 
-                        print(f'Sending {filename} to {ip}')
-                        l = f.read(1024)
+                        print(f'Sending {filename} to {server}')
+                        l = f.read(1)
+                        counter = 1
                         while (l):
                             data_socket.send(l)
-                            l = f.read(1024)
+                            l = f.read(1)
+                            counter += 1
                         f.close()
 
                         data_socket.close()
                         response = control_socket.recv(1024).decode('utf-8').strip()
-                        print(response)
+                        print(response + f' Transferred {counter} bytes.')
 
         elif command == 'delete':
             # delete remote file from remote server
