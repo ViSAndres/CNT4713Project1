@@ -105,5 +105,13 @@ if response.startswith('230'):
             data_socket.close()
             response = control_socket.recv(1024).decode('utf-8').strip()
             print(response)
+
+        if command == 'delete':
+            # delete remote file from remote server
+            filename = listOfArgs[1]
+            control_socket.send(bytes(f'DELE {filename}\r\n', 'utf-8'))
+            response = control_socket.recv(1024).decode('utf-8').strip()
+            print(response)
+
         else:
             print(f'Error: command "{command}" not supported')
