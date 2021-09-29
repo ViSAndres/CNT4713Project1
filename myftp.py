@@ -34,13 +34,28 @@ control_socket.send(bytes(f'PASS {password}\r\n', 'utf-8'))
 response = control_socket.recv(1024).decode('utf-8').strip()
 print(response)
 
+def extractPASVData(response):
+    indexOne = response.index('(')
+    indexTwo = response.index(')')
+    return response[indexOne + 1:indexTwo].split(',')
+
+def extractIP(data):
+    return data[0] + '.' + data[1] + '.' + data[2] + '.' + data[3]
+
+def extractPort(data):
+    dataOne = int(data[4])
+    dataTwo = int(data[5])
+
+    return (dataOne * 256) + dataTwo
+
 # login successful
 if response.startswith('230'):
     # main loop
     loop = True
     while loop:
-        print('Please enter a command, only "quit" supported so far.')
-        command = input('ftp> ')
+        userInput = input('ftp> ')
+        listOfArgs = userInput.split()
+        command = listOfArgs[0]
 
         if command == 'quit':
             # end session
@@ -50,39 +65,51 @@ if response.startswith('230'):
             control_socket.close()
             loop = False
 
-        if command == 'put':
+        elif command == 'put':
             # upload local file to remote server
+            if (len(listOfArgs) != 2):
+                print('Put command must be: put <filename>')
+            else:
+                filename = listOfArgs[1]
+                try:
+                    f = open(filename,'rb')
+                except Exception:
+                    print(f'Error: file {filename} not found')
+                else:
+                    control_socket.send(bytes('PASV\r\n', 'utf-8'))
+                    response = control_socket.recv(1024).decode('utf-8').strip()
+                    print(response)
+
+                    data_socket = socket(AF_INET, SOCK_STREAM)
+                    dataPASV = extractPASVData(response)
+                    ip = extractIP(dataPASV)
+                    port = extractPort(dataPASV)
+
+                    try:
+                        data_socket.connect((ip, port))
+                    except Exception:
+                        print(f'Error: server {ip} cannot be found.')
+                    else:
+                        print(f'Connected to data socket: {ip}')
+                        control_socket.send(bytes(f'STOR {filename}\r\n', 'utf-8'))
+                        response = control_socket.recv(1024).decode('utf-8').strip()
+                        print(response)
+
+                        print(f'Sending {filename} to {ip}')
+                        l = f.read(1024)
+                        while (l):
+                            data_socket.send(l)
+                            l = f.read(1024)
+                        f.close()
+
+                        data_socket.close()
+                        response = control_socket.recv(1024).decode('utf-8').strip()
+                        print(response)
+
+        elif command == 'delete':
+            # delete remote file from remote server
             filename = listOfArgs[1]
-
-            control_socket.send(bytes('PASV\r\n', 'utf-8'))
-            response = control_socket.recv(1024).decode('utf-8').strip()
-            print(response)
-
-            dataPASV = extractingPASVData(response)
-            ip = extractingIP(dataPASV)
-            port = extractingPort(dataPASV)
-
-            data_socket = socket(AF_INET, SOCK_STREAM)
-            try:
-                data_socket.connect((ip, port))
-            except Exception:
-                print(f'Error: server {ip} cannot be found.')
-                sys.exit()
-            print(f'Connected to {ip}')
-
-            print(f'sending {filename}')
-            control_socket.send(bytes(f'STOR {filename}\r\n', 'utf-8'))
-            response = control_socket.recv(1024).decode('utf-8').strip()
-            print(response)
-
-            f = open(filename,'rb')
-            l = f.read(1024)
-            while (l):
-                data_socket.send(l)
-                l = f.read(1024)
-            f.close()
-
-            data_socket.close()
+            control_socket.send(bytes(f'DELE {filename}\r\n', 'utf-8'))
             response = control_socket.recv(1024).decode('utf-8').strip()
             print(response)
 
