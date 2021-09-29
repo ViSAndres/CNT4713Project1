@@ -49,5 +49,42 @@ if response.startswith('230'):
             print(response)
             control_socket.close()
             loop = False
+
+        if command == 'put':
+            # upload local file to remote server
+            filename = listOfArgs[1]
+
+            control_socket.send(bytes('PASV\r\n', 'utf-8'))
+            response = control_socket.recv(1024).decode('utf-8').strip()
+            print(response)
+
+            dataPASV = extractingPASVData(response)
+            ip = extractingIP(dataPASV)
+            port = extractingPort(dataPASV)
+
+            data_socket = socket(AF_INET, SOCK_STREAM)
+            try:
+                data_socket.connect((ip, port))
+            except Exception:
+                print(f'Error: server {ip} cannot be found.')
+                sys.exit()
+            print(f'Connected to {ip}')
+
+            print(f'sending {filename}')
+            control_socket.send(bytes(f'STOR {filename}\r\n', 'utf-8'))
+            response = control_socket.recv(1024).decode('utf-8').strip()
+            print(response)
+
+            f = open(filename,'rb')
+            l = f.read(1024)
+            while (l):
+                data_socket.send(l)
+                l = f.read(1024)
+            f.close()
+
+            data_socket.close()
+            response = control_socket.recv(1024).decode('utf-8').strip()
+            print(response)
+
         else:
             print(f'Error: command "{command}" not supported')
