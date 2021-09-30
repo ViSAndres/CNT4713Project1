@@ -68,34 +68,32 @@ if response.startswith('230'):
         elif command == 'list':
             # upload local file to remote server
             if (len(listOfArgs) != 1):
-                print('List command doesnt need arg')
+                print('List command doesnt need arguments. Should just be: ftp> list')
             else:
-    
-                    control_socket.send(bytes('PASV\r\n', 'utf-8'))
+                control_socket.send(bytes('PASV\r\n', 'utf-8'))
+                response = control_socket.recv(1024).decode('utf-8').strip()
+                print(response)
+
+                data_socket = socket(AF_INET, SOCK_STREAM)
+                dataPASV = extractPASVData(response)
+                ip = extractIP(dataPASV)
+                port = extractPort(dataPASV)
+
+                try:
+                    data_socket.connect((ip, port))
+                except Exception:
+                    print(f'Error: server {ip} cannot be found.')
+                else:
+                    print(f'Connected to data socket: {ip}')
+                    control_socket.send(bytes('LIST\r\n', 'utf-8'))
                     response = control_socket.recv(1024).decode('utf-8').strip()
                     print(response)
+                    response = data_socket.recv(1024).decode('utf-8').strip()
+                    print(response)
 
-                    data_socket = socket(AF_INET, SOCK_STREAM)
-                    dataPASV = extractPASVData(response)
-                    ip = extractIP(dataPASV)
-                    port = extractPort(dataPASV)
-
-                    try:
-                        data_socket.connect((ip, port))
-                    except Exception:
-                        print(f'Error: server {ip} cannot be found.')
-                    else:
-                        print(f'Connected to data socket: {ip}')
-                        control_socket.send(bytes('LIST\r\n', 'utf-8'))
-                        response = control_socket.recv(1024).decode('utf-8').strip()
-                        print(response)
-                        response = data_socket.recv(1024).decode('utf-8').strip()
-                        print(response)
-
-                        data_socket.close()
-                        response = control_socket.recv(1024).decode('utf-8').strip()
-                        print(response)
-
+                    data_socket.close()
+                    response = control_socket.recv(1024).decode('utf-8').strip()
+                    print(response)
 
         elif command == 'put':
             # upload local file to remote server
