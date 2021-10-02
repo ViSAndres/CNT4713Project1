@@ -119,7 +119,6 @@ if response.startswith('230'):
             if len(listOfArgs) != 1:
                 print('LS command must be: ls')
             else:
-                filename = listOfArgs
                 control_socket.send(bytes('PASV\r\n', 'utf-8'))
                 response = control_socket.recv(1024).decode('utf-8').strip()
                 print(response)
