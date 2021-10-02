@@ -115,5 +115,59 @@ if response.startswith('230'):
             response = control_socket.recv(1024).decode('utf-8').strip()
             print(response)
 
+        elif command == 'ls':
+            if len(listOfArgs) != 1:
+                print('LS command must be: ls')
+            else:
+                control_socket.send(bytes('PASV\r\n', 'utf-8'))
+                response = control_socket.recv(1024).decode('utf-8').strip()
+                print(response)
+
+                data_socket = socket(AF_INET, SOCK_STREAM)
+                dataPASV = extractPASVData(response)
+                ip = extractIP(dataPASV)
+                port = extractPort(dataPASV)
+
+                try:
+                    data_socket.connect((ip, port))
+                except Exception:
+                    print(f'Error: server {ip} cannot be found.')
+                else:
+                    print(f'Connected to data socket: {ip}')
+                    control_socket.send(bytes(f'LIST\r\n', 'utf-8'))
+                    response = control_socket.recv(1024).decode('utf-8').strip()
+                    print(response)
+                    response = data_socket.recv(4096).decode('utf-8').strip()
+                    print(response)
+                    response = control_socket.recv(1024).decode('utf-8').strip()
+                    print(response)
+                    data_socket.close()
+
+        elif command == 'cd':
+            if len(listOfArgs) != 2:
+                print('CD command must be: cd <name of directory>')
+            else:
+                directoryName = listOfArgs[1]
+                control_socket.send(bytes('PASV\r\n', 'utf-8'))
+                response = control_socket.recv(1024).decode('utf-8').strip()
+                print(response)
+
+                data_socket = socket(AF_INET, SOCK_STREAM)
+                dataPASV = extractPASVData(response)
+                ip = extractIP(dataPASV)
+                port = extractPort(dataPASV)
+
+                try:
+                    data_socket.connect((ip, port))
+                except Exception:
+                    print(f'Error: server {ip} cannot be found.')
+                else:
+                    print(f'Connected to data socket: {ip}')
+                    control_socket.send(bytes(f'CWD {directoryName}\r\n', 'utf-8'))
+                    response = control_socket.recv(1024).decode('utf-8').strip()
+                    print(response)
+                    data_socket.close()
+
+
         else:
             print(f'Error: command "{command}" not supported')
