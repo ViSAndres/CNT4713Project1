@@ -1,0 +1,38 @@
+elif command == 'get':
+            # download file - remote sever
+            if (len(listOfArgs) != 2):
+                print('Get command must be: get <filename>')
+            else:
+                filename = listOfArgs[1]
+                try:
+                    f = open(filename,'wb')
+                except Exception:
+                    print(f'Error: file {filename} not found')
+                else:
+                    control_socket.send(bytes('PASV\r\n', 'utf-8'))
+                    response = control_socket.recv(1024).decode('utf-8').strip()
+                    print(response)
+                    data_socket = socket(AF_INET, SOCK_STREAM)
+                    dataPASV = extractPASVData(response)
+                    ip = extractIP(dataPASV)
+                    port = extractPort(dataPASV)
+                    try:
+                        data_socket.connect((ip, port))
+                    except Exception:
+                        print(f'Error: server {ip} cannot be found.')
+                    else:
+                        print(f'Connected to data socket: {ip}')
+                        control_socket.recv(bytes(f'STOR {filename}\r\n', 'utf-8'))
+                        response = control_socket.recv(1024).decode('utf-8').strip()
+                        print(response)
+                        print(f'Downloading {filename} to {server}')
+                        l = f.read(1)
+                        counter = 1
+                        while (l):
+                            data_socket.recv(1024)
+                            l = f.read(1)
+                            counter += 1
+                        f.close()
+                        data_socket.close()
+                        response = control_socket.recv(1024).decode('utf-8').strip()
+                        print(response + f' Transferred {counter} bytes.')
